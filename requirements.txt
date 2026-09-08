@@ -1,0 +1,42 @@
+# ==============================================================================
+# Sistema Multiagente per l'Identificazione di Patologie e Comportamenti a Rischio
+# Dipendenze del Progetto (Python 3.10 / 3.11 raccomandato)
+# ==============================================================================
+
+# Core Deep Learning & Tensor Computation
+torch>=2.2.0
+torchvision>=0.17.0
+torchaudio>=2.2.0
+accelerate>=0.28.0
+
+# Hugging Face Ecosystem
+transformers>=4.40.0
+datasets>=2.18.0
+tokenizers>=0.19.0
+huggingface_hub>=0.22.0
+
+# NLP, Tokenizzazione & NER Ontologico
+spacy>=3.7.4
+nltk>=3.8.1
+
+# Topic Modeling & Embeddings
+sentence-transformers>=2.6.0
+bertopic>=0.16.0
+umap-learn>=0.5.5
+hdbscan>=0.8.33
+
+# Analisi Dati, Statistica & Machine Learning Tradizionale
+numpy>=1.26.0,<2.0.0
+pandas>=2.2.0
+scipy>=1.12.0
+scikit-learn>=1.4.0
+
+# Configurazione, Utility & Logging
+pyyaml>=6.0.1
+pydantic>=2.6.0
+tqdm>=4.66.0
+rich>=13.7.0
+python-dotenv>=1.0.1
+
+# Testing & Quality Assurance
+pytest>=8.1.0

@@ -1,0 +1,84 @@
+# ==============================================================================
+# Multi-Agent System (MAS) Configuration - Clinical & Mental Health Analysis
+# English Pipeline (Social Media & Clinical Text)
+# ==============================================================================
+
+general:
+  seed: 42
+  device: "mps" # Options: 'mps' (Apple Silicon), 'cuda' (NVIDIA GPU), 'cpu'
+  language: "en"
+
+agent1_preprocessing:
+  spacy_model: "en_core_web_sm"
+  max_seq_length: 512
+  clean_urls: true
+  clean_emojis: true
+  clean_repeated_punct: true
+  # High-valence psychological/clinical keywords preserved from over-stemming or noise removal
+  clinical_preserved_keywords:
+    - "anxiety"
+    - "anxious"
+    - "insomnia"
+    - "sleepless"
+    - "sad"
+    - "sadness"
+    - "depressed"
+    - "depression"
+    - "panic"
+    - "fear"
+    - "suicide"
+    - "suicidal"
+    - "overdose"
+    - "withdrawal"
+    - "craving"
+    - "hopeless"
+    - "relapse"
+
+agent2_ner_ontology:
+  ontology_path: "data/ontology/dao_substances_map.json"
+  # Open-source Transformer NER for biomedical/clinical entities or general entities
+  ner_model: "dslim/bert-base-NER"
+  bio_ner_model: "d4data/biomedical-ner-all"
+  enable_entity_masking: true
+
+agent3_sentiment_emotion:
+  # Open-source models for sentiment polarity and 7 core emotions
+  sentiment_model: "cardiffnlp/twitter-roberta-base-sentiment-latest"
+  emotion_model: "SamLowe/roberta-base-go_emotions"
+  emotions:
+    - "joy"
+    - "sadness"
+    - "anger"
+    - "fear"
+    - "love"
+    - "surprise"
+    - "gratitude"
+
+agent4_topic_modeling:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  n_neighbors: 15
+  n_components: 5
+  min_cluster_size: 10
+
+agent6_decision_multitask:
+  # Shared Transformer backbone: roberta-base or emilyalsentzer/Bio_ClinicalBERT
+  backbone_model: "FacebookAI/roberta-base"
+  clinical_backbone_model: "emilyalsentzer/Bio_ClinicalBERT"
+  target_classes:
+    - "insomnia"
+    - "depression"
+    - "anxiety"
+    - "substance_abuse"
+  # Weighted Cross-Entropy loss weights to address class imbalance
+  loss_weights:
+    insomnia: 1.0
+    depression: 1.2
+    anxiety: 1.0
+    substance_abuse: 1.5
+
+risk_scoring:
+  # SleepDepScore: alpha * P(insomnia) + beta * P(depression)
+  alpha: 0.5
+  beta: 0.5
+  critical_threshold: 0.75
+  warning_threshold: 0.50

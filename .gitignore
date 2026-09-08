@@ -1,0 +1,38 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Hugging Face & Model cache
+cache/
+models/weights/
+*.pt
+*.bin
+*.onnx
+*.safetensors
+
+# Data & local checkpoints
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+checkpoints/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
