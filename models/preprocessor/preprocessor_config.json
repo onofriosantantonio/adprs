@@ -1,0 +1,25 @@
+{
+  "agent_id": "agent_1",
+  "name": "PreprocessingAgent",
+  "spacy_model": "en_core_web_sm",
+  "max_seq_length": 512,
+  "clinical_preserved_keywords": [
+    "anxiety",
+    "anxious",
+    "craving",
+    "depressed",
+    "depression",
+    "fear",
+    "hopeless",
+    "insomnia",
+    "overdose",
+    "panic",
+    "relapse",
+    "sad",
+    "sadness",
+    "sleepless",
+    "suicidal",
+    "suicide",
+    "withdrawal"
+  ]
+}
