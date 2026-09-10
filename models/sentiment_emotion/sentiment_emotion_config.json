@@ -1,0 +1,21 @@
+{
+  "agent_id": "agent_3",
+  "name": "SentimentEmotionAgent",
+  "sentiment_model": "cardiffnlp/twitter-roberta-base-sentiment-latest",
+  "emotion_model": "SamLowe/roberta-base-go_emotions",
+  "target_emotions": [
+    "joy",
+    "sadness",
+    "anger",
+    "fear",
+    "love",
+    "surprise",
+    "gratitude"
+  ],
+  "sentiment_classes": [
+    "negative",
+    "neutral",
+    "positive"
+  ],
+  "feature_vector_dim": 10
+}
