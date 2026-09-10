@@ -1,0 +1,9 @@
+{
+  "agent_id": "agent_4",
+  "name": "ClinicalTopicModelingAgent",
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "n_neighbors": 15,
+  "n_components": 5,
+  "min_cluster_size": 10,
+  "num_topics": 432
+}
