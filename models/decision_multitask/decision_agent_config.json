@@ -1,0 +1,20 @@
+{
+  "agent_id": "agent_5",
+  "name": "MultiTaskDecisionAgent",
+  "backbone_model": "FacebookAI/roberta-base",
+  "alpha": 0.5,
+  "beta": 0.5,
+  "critical_threshold": 0.75,
+  "warning_threshold": 0.5,
+  "freeze_backbone": true,
+  "primary_classes": [
+    "Normal",
+    "Depression",
+    "Anxiety",
+    "Suicidal"
+  ],
+  "auxiliary_classes": [
+    "Insomnia_Risk",
+    "Substance_Abuse_Risk"
+  ]
+}
