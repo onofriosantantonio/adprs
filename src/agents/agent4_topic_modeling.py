@@ -227,8 +227,10 @@ class ClinicalTopicModelingAgent(BaseAgent):
         }
 
         logger = get_logger("ClinicalTopicModelingAgent.from_pretrained")
-        logger.info(f"Caricamento modello BERTopic da: {model_dir}")
-        loaded_bertopic = BERTopic.load(str(model_dir))
+        embedding_model_name = cfg_data.get("embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
+        logger.info(f"Caricamento modello BERTopic da: {model_dir} con embedding model: {embedding_model_name}")
+        embedding_model = SentenceTransformer(embedding_model_name)
+        loaded_bertopic = BERTopic.load(str(model_dir), embedding_model=embedding_model)
 
         agent = cls(config=config, model=loaded_bertopic)
         agent.is_fitted = True
