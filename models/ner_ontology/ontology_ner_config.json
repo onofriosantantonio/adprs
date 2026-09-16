@@ -1,0 +1,19 @@
+{
+  "agent_id": "agent_2",
+  "name": "OntologicalNERAgent",
+  "enable_entity_masking": true,
+  "ontology_categories": [
+    "[ALCOHOL]",
+    "[BENZODIAZEPINE]",
+    "[CANNABINOID]",
+    "[DISSOCIATIVE]",
+    "[DSM5_SYMPTOM]",
+    "[ENTACTOGEN]",
+    "[HALLUCINOGEN]",
+    "[OPIOID]",
+    "[SEDATIVE]",
+    "[STIMULANT]",
+    "[SYNTHETIC_CANNABINOID]"
+  ],
+  "total_rules": 335
+}

@@ -8,6 +8,18 @@ general:
   device: "mps" # Options: 'mps' (Apple Silicon), 'cuda' (NVIDIA GPU), 'cpu'
   language: "en"
 
+dataset:
+  hf_repo: "ourafla/Mental-Health_Text-Classification_Dataset"
+  train_file: "mental_heath_unbanlanced.csv"
+  test_file: "mental_health_combined_test.csv"
+  text_column: "text"
+  label_column: "status"
+  target_labels:
+    - "Normal"
+    - "Depression"
+    - "Anxiety"
+    - "Suicidal"
+
 agent1_preprocessing:
   spacy_model: "en_core_web_sm"
   max_seq_length: 512
@@ -35,11 +47,13 @@ agent1_preprocessing:
     - "relapse"
 
 agent2_ner_ontology:
-  ontology_path: "data/ontology/dao_substances_map.json"
-  # Open-source Transformer NER for biomedical/clinical entities or general entities
+  dao_ontology_path: "data/ontology/dao_substances_map.json"
+  dsm5_ontology_path: "data/ontology/dsm5_symptoms_map.json"
+  clinical_owl_path: "data/ontology/mfomd.owl"
   ner_model: "dslim/bert-base-NER"
   bio_ner_model: "d4data/biomedical-ner-all"
   enable_entity_masking: true
+  save_dir: "models/ner_ontology"
 
 agent3_sentiment_emotion:
   # Open-source models for sentiment polarity and 7 core emotions
