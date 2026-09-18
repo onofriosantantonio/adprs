@@ -45,8 +45,9 @@ class MultiTaskClinicalTransformer(nn.Module):
 
         # 1. Transformer Backbone
         self.config = AutoConfig.from_pretrained(backbone_model_name)
-        self.config.attention_probs_dropout_prob = 0.0
-        self.config.hidden_dropout_prob = 0.0
+        if freeze_backbone:
+            self.config.attention_probs_dropout_prob = 0.0
+            self.config.hidden_dropout_prob = 0.0
         self.transformer = AutoModel.from_pretrained(backbone_model_name, config=self.config)
         hidden_size = self.config.hidden_size  # tipicamente 768 per roberta-base
 
