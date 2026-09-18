@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from src.utils.config_loader import load_config
 from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
@@ -28,7 +29,7 @@ from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from src.agents.agent5_decision_multitask import AUXILIARY_CLASSES, PRIMARY_CLASSES, MultiTaskDecisionAgent
 from src.models.multitask_transformer import MultiTaskClinicalTransformer
-from src.utils.config_loader import load_config
+from src.utils.constants import ALL_EMOTIONS
 from src.utils.logger import get_logger
 
 logger = get_logger("Train-MultiTask")
@@ -56,12 +57,12 @@ class ClinicalDataset(Dataset):
 
         self.aux_targets = np.column_stack([insomnia_labels, substance_labels]).astype(np.float32)
 
-        # Costruzione feature tabulari (dim 12)
-        tab_cols = [
-            "sent_neg", "sent_neu", "sent_pos",
-            "emo_joy", "emo_sadness", "emo_anger", "emo_fear", "emo_love", "emo_surprise", "emo_gratitude",
-            "entities_detected_count", "topic_probability"
-        ]
+        # Costruzione feature tabulari (dim 33)
+        tab_cols = (
+            ["sent_neg", "sent_neu", "sent_pos"]
+            + [f"emo_{e}" for e in ALL_EMOTIONS]
+            + ["entities_detected_count", "topic_probability"]
+        )
         # Riempi eventuali NaN con 0
         df_tab = df[tab_cols].fillna(0.0).copy()
         df_tab["entities_detected_count"] = df_tab["entities_detected_count"].clip(upper=10.0) / 10.0
@@ -197,7 +198,7 @@ def main():
         backbone_model_name=backbone_name,
         num_primary_classes=len(PRIMARY_CLASSES),
         num_auxiliary_classes=len(AUXILIARY_CLASSES),
-        tabular_feature_dim=12,
+        tabular_feature_dim=33,
         freeze_backbone=args.freeze_backbone,
     ).to(device)
 

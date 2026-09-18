@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from src.agents.agent5_decision_multitask import MultiTaskDecisionAgent, PRIMARY_CLASSES, AUXILIARY_CLASSES
+from src.utils.constants import ALL_EMOTIONS
 from src.models.multitask_transformer import MultiTaskClinicalTransformer
 
 
@@ -32,7 +33,7 @@ def test_transformer_forward_pass():
         backbone_model_name="FacebookAI/roberta-base",
         num_primary_classes=4,
         num_auxiliary_classes=2,
-        tabular_feature_dim=12,
+        tabular_feature_dim=33,
     )
     model.eval()
 
@@ -40,7 +41,7 @@ def test_transformer_forward_pass():
     seq_len = 16
     input_ids = torch.randint(0, 1000, (batch_size, seq_len))
     attention_mask = torch.ones((batch_size, seq_len))
-    tabular_features = torch.randn((batch_size, 12))
+    tabular_features = torch.randn((batch_size, 33))
 
     with torch.no_grad():
         outputs = model(input_ids, attention_mask, tabular_features)
@@ -72,28 +73,23 @@ def test_sleep_dep_score_levels(mock_config):
 
 
 def test_extract_tabular_vector(mock_config):
-    """Verifica che il vettore tabulare contenga esattamente 12 dimensioni."""
+    """Verifica che il vettore tabulare contenga esattamente 33 dimensioni."""
     agent = MultiTaskDecisionAgent(config=mock_config)
 
     sample_record = {
         "sent_neg": 0.8,
         "sent_neu": 0.1,
         "sent_pos": 0.1,
-        "emo_joy": 0.0,
-        "emo_sadness": 0.7,
-        "emo_anger": 0.2,
-        "emo_fear": 0.5,
-        "emo_love": 0.0,
-        "emo_surprise": 0.1,
-        "emo_gratitude": 0.0,
-        "entities_detected_count": 2,
-        "topic_probability": 0.95,
     }
+    for emo in ALL_EMOTIONS:
+        sample_record[f"emo_{emo}"] = 0.0
+    sample_record["entities_detected_count"] = 2
+    sample_record["topic_probability"] = 0.95
 
     vec = agent.extract_tabular_vector(sample_record)
-    assert vec.shape == (1, 12)
+    assert vec.shape == (1, 33)
     assert vec[0, 0].item() == pytest.approx(0.8)
-    assert vec[0, 10].item() == pytest.approx(0.2)  # 2 / 10
+    assert vec[0, 31].item() == pytest.approx(0.2)  # entities_detected_count (2/10)
 
 
 def test_predict_and_process(mock_config):
@@ -105,10 +101,11 @@ def test_predict_and_process(mock_config):
         "sent_neg": 0.9,
         "sent_neu": 0.05,
         "sent_pos": 0.05,
-        "emo_sadness": 0.8,
-        "entities_detected_count": 1,
-        "topic_probability": 0.85,
     }
+    for emo in ALL_EMOTIONS:
+        record[f"emo_{emo}"] = 0.0
+    record["entities_detected_count"] = 1
+    record["topic_probability"] = 0.85
 
     result = agent.process(record)
 

@@ -56,17 +56,9 @@ agent2_ner_ontology:
   save_dir: "models/ner_ontology"
 
 agent3_sentiment_emotion:
-  # Open-source models for sentiment polarity and 7 core emotions
+  # Open-source models for sentiment polarity and 28 GoEmotions
   sentiment_model: "cardiffnlp/twitter-roberta-base-sentiment-latest"
   emotion_model: "SamLowe/roberta-base-go_emotions"
-  emotions:
-    - "joy"
-    - "sadness"
-    - "anger"
-    - "fear"
-    - "love"
-    - "surprise"
-    - "gratitude"
 
 agent4_topic_modeling:
   embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
