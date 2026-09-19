@@ -19,6 +19,7 @@ models/weights/
 *.bin
 *.onnx
 *.safetensors
+!models/topic_modeling/bertopic_model/topic_embeddings.safetensors
 
 # Data & local checkpoints
 data/raw/*
