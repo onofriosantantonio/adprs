@@ -21,6 +21,7 @@ from transformers import AutoTokenizer
 
 from src.agents.base_agent import BaseAgent
 from src.models.multitask_transformer import MultiTaskClinicalTransformer
+from src.utils.constants import ALL_EMOTIONS
 from src.utils.config_loader import load_config
 from src.utils.logger import get_logger
 
@@ -85,7 +86,7 @@ class MultiTaskDecisionAgent(BaseAgent):
                 backbone_model_name=self.backbone_name,
                 num_primary_classes=len(PRIMARY_CLASSES),
                 num_auxiliary_classes=len(AUXILIARY_CLASSES),
-                tabular_feature_dim=12,
+                tabular_feature_dim=33,
                 freeze_backbone=freeze_backbone,
             ).to(self.device)
             self.is_trained = False
@@ -94,9 +95,10 @@ class MultiTaskDecisionAgent(BaseAgent):
 
     def extract_tabular_vector(self, data: Dict[str, Any]) -> torch.Tensor:
         """
-        Estrae e normalizza il vettore tabulare (dim=12) dai campi prodotti dagli agenti a monte:
+        Estrae e normalizza il vettore tabulare (dim=33) dai campi prodotti
+        dagli agenti a monte:
         - 3 sentiment scores (neg, neu, pos)
-        - 7 emotion scores (joy, sadness, anger, fear, love, surprise, gratitude)
+        - 28 emotion scores (una per ciascuna delle GoEmotions)
         - 1 entities detected count (normalizzato)
         - 1 topic probability
         """
@@ -104,23 +106,14 @@ class MultiTaskDecisionAgent(BaseAgent):
         sent_neu = float(data.get("sent_neu", 0.0))
         sent_pos = float(data.get("sent_pos", 0.0))
 
-        emo_joy = float(data.get("emo_joy", 0.0))
-        emo_sad = float(data.get("emo_sadness", 0.0))
-        emo_ang = float(data.get("emo_anger", 0.0))
-        emo_fea = float(data.get("emo_fear", 0.0))
-        emo_lov = float(data.get("emo_love", 0.0))
-        emo_sur = float(data.get("emo_surprise", 0.0))
-        emo_gra = float(data.get("emo_gratitude", 0.0))
+        emotion_scores = []
+        for emo_name in ALL_EMOTIONS:
+            emotion_scores.append(float(data.get(f"emo_{emo_name}", 0.0)))
 
-        # Feature ontologica e tematica
         entities_cnt = min(float(data.get("entities_detected_count", 0.0)) / 10.0, 1.0)
         topic_prob = float(data.get("topic_probability", 0.0))
 
-        vec = [
-            sent_neg, sent_neu, sent_pos,
-            emo_joy, emo_sad, emo_ang, emo_fea, emo_lov, emo_sur, emo_gra,
-            entities_cnt, topic_prob,
-        ]
+        vec = [sent_neg, sent_neu, sent_pos] + emotion_scores + [entities_cnt, topic_prob]
         return torch.tensor([vec], dtype=torch.float32, device=self.device)
 
     def calculate_sleep_dep_score(self, p_depression: float, p_insomnia: float) -> tuple[float, str]:
@@ -242,11 +235,20 @@ class MultiTaskDecisionAgent(BaseAgent):
         self.logger.info(f"Agente 5 (Decisione & MTL) salvato con successo in: {save_path}")
 
     @classmethod
-    def from_pretrained(cls, save_directory: Union[str, Path]) -> "MultiTaskDecisionAgent":
+    def from_pretrained(cls, save_directory: Union[str, Path], token: Optional[str] = None) -> "MultiTaskDecisionAgent":
         """
-        Ricarica l'Agente 5 con pesi allenati da disco locale.
+        Ricarica l'Agente 5 con pesi allenati da disco locale o direttamente da Hugging Face Hub.
         """
         load_path = Path(save_directory)
+        
+        # Se non è una directory locale esistente, tenta il download da Hugging Face Hub
+        if not load_path.is_dir():
+            from huggingface_hub import snapshot_download
+            logger = get_logger("MultiTaskDecisionAgent.from_pretrained")
+            logger.info(f"'{save_directory}' non è una cartella locale. Download in corso da Hugging Face Hub...")
+            downloaded_dir = snapshot_download(repo_id=str(save_directory), token=token)
+            load_path = Path(downloaded_dir)
+
         weights_file = load_path / "pytorch_model.bin"
         config_file = load_path / "decision_agent_config.json"
 
@@ -262,7 +264,7 @@ class MultiTaskDecisionAgent(BaseAgent):
             backbone_model_name=cfg_data["backbone_model"],
             num_primary_classes=len(cfg_data["primary_classes"]),
             num_auxiliary_classes=len(cfg_data["auxiliary_classes"]),
-            tabular_feature_dim=12,
+            tabular_feature_dim=33,
             freeze_backbone=cfg_data.get("freeze_backbone", True),
         )
 

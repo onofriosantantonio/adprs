@@ -3,19 +3,40 @@
   "name": "SentimentEmotionAgent",
   "sentiment_model": "cardiffnlp/twitter-roberta-base-sentiment-latest",
   "emotion_model": "SamLowe/roberta-base-go_emotions",
-  "target_emotions": [
-    "joy",
-    "sadness",
+  "emotions": [
+    "admiration",
+    "amusement",
     "anger",
+    "annoyance",
+    "approval",
+    "caring",
+    "confusion",
+    "curiosity",
+    "desire",
+    "disappointment",
+    "disapproval",
+    "disgust",
+    "embarrassment",
+    "excitement",
     "fear",
+    "gratitude",
+    "grief",
+    "joy",
     "love",
+    "nervousness",
+    "optimism",
+    "pride",
+    "realization",
+    "relief",
+    "remorse",
+    "sadness",
     "surprise",
-    "gratitude"
+    "neutral"
   ],
   "sentiment_classes": [
     "negative",
     "neutral",
     "positive"
   ],
-  "feature_vector_dim": 10
+  "feature_vector_dim": 31
 }

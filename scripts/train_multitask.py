@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from src.utils.config_loader import load_config
 from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
@@ -28,7 +29,7 @@ from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from src.agents.agent5_decision_multitask import AUXILIARY_CLASSES, PRIMARY_CLASSES, MultiTaskDecisionAgent
 from src.models.multitask_transformer import MultiTaskClinicalTransformer
-from src.utils.config_loader import load_config
+from src.utils.constants import ALL_EMOTIONS
 from src.utils.logger import get_logger
 
 logger = get_logger("Train-MultiTask")
@@ -56,12 +57,12 @@ class ClinicalDataset(Dataset):
 
         self.aux_targets = np.column_stack([insomnia_labels, substance_labels]).astype(np.float32)
 
-        # Costruzione feature tabulari (dim 12)
-        tab_cols = [
-            "sent_neg", "sent_neu", "sent_pos",
-            "emo_joy", "emo_sadness", "emo_anger", "emo_fear", "emo_love", "emo_surprise", "emo_gratitude",
-            "entities_detected_count", "topic_probability"
-        ]
+        # Costruzione feature tabulari (dim 33)
+        tab_cols = (
+            ["sent_neg", "sent_neu", "sent_pos"]
+            + [f"emo_{e}" for e in ALL_EMOTIONS]
+            + ["entities_detected_count", "topic_probability"]
+        )
         # Riempi eventuali NaN con 0
         df_tab = df[tab_cols].fillna(0.0).copy()
         df_tab["entities_detected_count"] = df_tab["entities_detected_count"].clip(upper=10.0) / 10.0
@@ -157,6 +158,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--patience", type=int, default=3, help="Epoche senza miglioramento prima di attivare l'early stopping")
     parser.add_argument("--sample-size", type=int, default=0, help="Limita righe per debug veloce (0 = full)")
     parser.add_argument("--freeze-backbone", action="store_true", help="Congela il backbone RoBERTa per transfer learning")
     args = parser.parse_args()
@@ -197,7 +199,7 @@ def main():
         backbone_model_name=backbone_name,
         num_primary_classes=len(PRIMARY_CLASSES),
         num_auxiliary_classes=len(AUXILIARY_CLASSES),
-        tabular_feature_dim=12,
+        tabular_feature_dim=33,
         freeze_backbone=args.freeze_backbone,
     ).to(device)
 
@@ -225,7 +227,9 @@ def main():
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=int(0.1 * total_steps), num_training_steps=total_steps)
 
     best_f1 = 0.0
+    best_val_loss = float('inf')
     save_path = Path(args.save_dir)
+    patience_counter = 0
 
     for epoch in range(1, args.epochs + 1):
         logger.info(f"\n--- Epoca {epoch}/{args.epochs} ---")
@@ -234,11 +238,22 @@ def main():
 
         logger.info(f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Val F1-Macro: {val_f1:.4f}")
 
+        # Salvataggio del modello basato sulla metrica di performance primaria (F1-Macro)
         if val_f1 > best_f1:
             best_f1 = val_f1
             logger.info(f"Nuovo miglior F1-Macro: {best_f1:.4f}! Salvataggio modello in {save_path}...")
             agent = MultiTaskDecisionAgent(config=config, model=model, tokenizer=tokenizer)
             agent.save_pretrained(save_path)
+            
+        # Early Stopping: monitoriamo la Validation Loss per prevenire l'overfitting
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= args.patience:
+                logger.info(f"Early stopping innescato: Validation Loss non migliora da {args.patience} epoche (rischio overfitting).")
+                break
 
     logger.info(f"\nAddestramento completato! Miglior F1-Macro ottenuto: {best_f1:.4f}")
 

@@ -20,7 +20,9 @@ from src.agents.agent3_sentiment_emotion import (
     SENTIMENT_CLASSES,
     SentimentEmotionAgent,
     _resolve_device,
+    FEATURE_VECTOR_DIM,
 )
+from src.utils.constants import ALL_EMOTIONS
 from src.utils.config_loader import load_config
 
 
@@ -36,7 +38,6 @@ def minimal_config():
         "agent3_sentiment_emotion": {
             "sentiment_model": "cardiffnlp/twitter-roberta-base-sentiment-latest",
             "emotion_model": "SamLowe/roberta-base-go_emotions",
-            "emotions": ["joy", "sadness", "anger", "fear", "love", "surprise", "gratitude"],
         },
         "general": {"device": "cpu"},
     }
@@ -59,14 +60,7 @@ def _make_mock_sentiment_output():
 
 def _make_mock_emotion_output(dominant="sadness"):
     """Output sintetico della pipeline GoEmotions (return_all_scores=True)."""
-    base_emotions = [
-        "admiration", "amusement", "anger", "annoyance", "approval",
-        "caring", "confusion", "curiosity", "desire", "disappointment",
-        "disapproval", "disgust", "embarrassment", "excitement", "fear",
-        "gratitude", "grief", "joy", "love", "nervousness",
-        "optimism", "pride", "realization", "relief", "remorse",
-        "sadness", "surprise", "neutral",
-    ]
+    base_emotions = ALL_EMOTIONS
     scores = []
     for emo in base_emotions:
         score = 0.80 if emo == dominant else 0.01
@@ -85,17 +79,17 @@ def test_agent_init_no_model_load(agent_no_models):
     assert agent_no_models._emotion_pipeline is None
 
 
-def test_target_emotions_count(agent_no_models):
-    """Devono esserci esattamente 7 emozioni target."""
-    assert len(agent_no_models.target_emotions) == 7
+def test_emotions_count(agent_no_models):
+    """Devono esserci esattamente 28 emozioni (tutte le GoEmotions)."""
+    assert len(agent_no_models.emotions) == 28
 
 
 def test_feature_vector_dim(agent_no_models):
-    """Il vettore denso deve avere dimensione 10 (3 sentiment + 7 emozioni)."""
+    """Il vettore denso deve avere dimensione 31 (3 sentiment + 28 emozioni)."""
     s_vec = [0.5, 0.3, 0.2]
-    e_vec = [0.1, 0.8, 0.05, 0.3, 0.1, 0.02, 0.15]
+    e_vec = [0.1] * 28
     fv = agent_no_models.build_feature_vector(s_vec, e_vec)
-    assert len(fv) == 10
+    assert len(fv) == FEATURE_VECTOR_DIM
     assert fv == s_vec + e_vec
 
 
@@ -125,12 +119,12 @@ def test_analyze_sentiment_label(agent_no_models):
     assert label == "negative"
     assert 0.0 <= score <= 1.0
     assert len(vector) == 3
-    assert abs(sum(vector) - 1.0) < 0.01  # i 3 score devono sommare ~1
+    assert abs(sum(vector) - 1.0) < 0.01
 
 
 def test_analyze_sentiment_empty_text(agent_no_models):
     """Testo vuoto → fallback su 'neutral'."""
-    agent_no_models._sentiment_pipeline = None  # reset lazy load
+    agent_no_models._sentiment_pipeline = None
     agent_no_models._emotion_pipeline = None
 
     with patch.object(agent_no_models, "_load_models"):
@@ -147,7 +141,7 @@ def test_analyze_sentiment_empty_text(agent_no_models):
 
 
 def test_analyze_emotions_target_keys(agent_no_models):
-    """Il dict restituito deve avere esattamente le 7 emozioni target."""
+    """Il dict restituito deve avere esattamente le 28 emozioni GoEmotions."""
     with patch.object(agent_no_models, "_load_models"):
         agent_no_models._emotion_pipeline = MagicMock(
             return_value=_make_mock_emotion_output("sadness")
@@ -159,8 +153,8 @@ def test_analyze_emotions_target_keys(agent_no_models):
             "Everything feels dark and hopeless."
         )
 
-    assert set(emotion_scores.keys()) == set(agent_no_models.target_emotions)
-    assert len(emotion_vector) == 7
+    assert set(emotion_scores.keys()) == set(ALL_EMOTIONS)
+    assert len(emotion_vector) == 28
 
 
 def test_analyze_emotions_dominant(agent_no_models):
@@ -210,10 +204,8 @@ def test_process_adds_all_keys(agent_no_models):
     assert "emotion_scores" in result
     assert "emotion_vector_dense" in result
 
-    # Il vettore denso deve avere dim=10
-    assert len(result["emotion_vector_dense"]) == 10
+    assert len(result["emotion_vector_dense"]) == FEATURE_VECTOR_DIM
 
-    # I dati originali non devono essere persi
     assert result["status"] == "Anxiety"
 
 
@@ -258,8 +250,8 @@ def test_save_pretrained_creates_config(agent_no_models, tmp_path):
 
     assert saved["sentiment_model"] == agent_no_models.sentiment_model_name
     assert saved["emotion_model"] == agent_no_models.emotion_model_name
-    assert saved["target_emotions"] == agent_no_models.target_emotions
-    assert saved["feature_vector_dim"] == 10
+    assert saved["emotions"] == agent_no_models.emotions
+    assert saved["feature_vector_dim"] == FEATURE_VECTOR_DIM
 
 
 def test_from_pretrained_restores_config(agent_no_models, tmp_path):
@@ -271,7 +263,7 @@ def test_from_pretrained_restores_config(agent_no_models, tmp_path):
 
     assert reloaded.sentiment_model_name == agent_no_models.sentiment_model_name
     assert reloaded.emotion_model_name == agent_no_models.emotion_model_name
-    assert reloaded.target_emotions == agent_no_models.target_emotions
+    assert reloaded.emotions == agent_no_models.emotions
 
 
 def test_from_pretrained_missing_file(tmp_path):

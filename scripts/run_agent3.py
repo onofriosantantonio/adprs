@@ -11,8 +11,7 @@ Le colonne aggiunte al CSV di output:
   - sentiment_label        : negative / neutral / positive
   - sentiment_score        : confidenza (float)
   - sent_neg / sent_neu / sent_pos : vettore sentiment (3 float)
-  - emo_joy, emo_sadness, emo_anger, emo_fear,
-    emo_love, emo_surprise, emo_gratitude : score emozioni (7 float)
+  - emo_{emotion_name} : score emozioni (28 float, una per ciascuna GoEmotion)
 """
 
 import argparse
@@ -61,7 +60,6 @@ def run_agent3(
     df = pd.read_csv(input_path)
     logger.info(f"Righe caricate: {len(df)}")
 
-    # Sceglie la colonna testo: preferisce clean_text, altrimenti text
     text_col = "clean_text" if "clean_text" in df.columns else "text"
     logger.info(f"Colonna testo utilizzata: '{text_col}'")
 
@@ -69,11 +67,10 @@ def run_agent3(
     logger.info("Inizializzazione Agente 3 (SentimentEmotionAgent)...")
     agent3 = SentimentEmotionAgent(config=config)
 
-    # --- Inference -------------------------------------------------------
     sentiment_labels = []
     sentiment_scores = []
     sent_neg_list, sent_neu_list, sent_pos_list = [], [], []
-    emotion_cols = {f"emo_{e}": [] for e in agent3.target_emotions}
+    emotion_cols = {f"emo_{e}": [] for e in agent3.emotions}
 
     texts = df[text_col].fillna("").tolist()
     n = len(texts)
@@ -82,7 +79,6 @@ def run_agent3(
         f"(batch_size={batch_size}, modelli: sentiment + emotion)..."
     )
 
-    # Carica i modelli una sola volta prima del loop
     agent3._load_models()
 
     for i in tqdm(range(0, n, batch_size), desc="Agent 3 - Sentiment & Emotion"):
@@ -100,10 +96,9 @@ def run_agent3(
             sent_neu_list.append(round(s_vec[1], 6))
             sent_pos_list.append(round(s_vec[2], 6))
 
-            for emo in agent3.target_emotions:
+            for emo in agent3.emotions:
                 emotion_cols[f"emo_{emo}"].append(round(e_scores[emo], 6))
 
-    # --- Aggiunta colonne al dataframe -----------------------------------
     df["sentiment_label"] = sentiment_labels
     df["sentiment_score"] = sentiment_scores
     df["sent_neg"] = sent_neg_list
@@ -113,24 +108,21 @@ def run_agent3(
     for col_name, values in emotion_cols.items():
         df[col_name] = values
 
-    # --- Statistiche sommarie --------------------------------------------
     logger.info("=== Distribuzione Sentiment ===")
     for lbl, cnt in df["sentiment_label"].value_counts().items():
         logger.info(f"  {lbl}: {cnt} ({cnt/len(df)*100:.1f}%)")
 
     logger.info("=== Media Score Emozioni ===")
-    for emo in agent3.target_emotions:
+    for emo in agent3.emotions:
         col = f"emo_{emo}"
         logger.info(f"  {emo}: {df[col].mean():.4f}")
 
-    # --- Salvataggio CSV -------------------------------------------------
     output_path = input_path.parent / (
         input_path.stem.replace("_masked", "") + "_emotions.csv"
     )
     df.to_csv(output_path, index=False)
     logger.info(f"Dataset arricchito salvato in: {output_path}")
 
-    # --- Salvataggio modello ---------------------------------------------
     if save_model_dir:
         model_dir = Path(save_model_dir)
         logger.info(f"Salvataggio configurazione Agente 3 in: {model_dir}")

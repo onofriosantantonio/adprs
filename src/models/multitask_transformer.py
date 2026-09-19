@@ -30,7 +30,7 @@ class MultiTaskClinicalTransformer(nn.Module):
         backbone_model_name: str = "FacebookAI/roberta-base",
         num_primary_classes: int = 4,
         num_auxiliary_classes: int = 2,
-        tabular_feature_dim: int = 12,  # 3 sentiment + 7 emotions + 1 entities count + 1 topic prob
+        tabular_feature_dim: int = 33,  # 3 sentiment + 28 emotions + 1 entities count + 1 topic prob
         fusion_hidden_dim: int = 256,
         dropout_rate: float = 0.2,
         freeze_backbone: bool = True,
@@ -45,8 +45,9 @@ class MultiTaskClinicalTransformer(nn.Module):
 
         # 1. Transformer Backbone
         self.config = AutoConfig.from_pretrained(backbone_model_name)
-        self.config.attention_probs_dropout_prob = 0.0
-        self.config.hidden_dropout_prob = 0.0
+        if freeze_backbone:
+            self.config.attention_probs_dropout_prob = 0.0
+            self.config.hidden_dropout_prob = 0.0
         self.transformer = AutoModel.from_pretrained(backbone_model_name, config=self.config)
         hidden_size = self.config.hidden_size  # tipicamente 768 per roberta-base
 
